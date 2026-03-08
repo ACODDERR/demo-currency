@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Customer Segmentation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: #080c14;
+      font-family: 'DM Mono','Courier New',monospace;
+      color: #e2e8f0;
+      position: relative;
+      overflow: hidden;
+    }
+    .grid-bg {
+      position: fixed;
+      inset: 0;
+      opacity: 0.04;
+      pointer-events: none;
+      background-image: linear-gradient(#38bdf8 1px,transparent 1px),linear-gradient(90deg,#38bdf8 1px,transparent 1px);
+      background-size: 40px 40px;
+    }
+    .glow {
+      position: fixed;
+      top: -20%;
+      right: -10%;
+      width: 600px;
+      height: 600px;
+      pointer-events: none;
+      background: radial-gradient(circle,rgba(56,189,248,0.06) 0%,transparent 70%);
+    }
+    .container {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 48px 24px;
+      position: relative;
+      z-index: 1;
+    }
+    .header-badge {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      background: #38bdf8;
+      border-radius: 50%;
+      box-shadow: 0 0 12px #38bdf8;
+      animation: pulse 2s infinite;
+    }
+    .header-badge span {
+      font-size: 11px;
+      letter-spacing: 0.2em;
+      color: #38bdf8;
+      text-transform: uppercase;
+    }
+    h1 {
+      font-size: clamp(28px,5vw,44px);
+      font-weight: 700;
+      color: #f1f5f9;
+      letter-spacing: -0.02em;
+      margin: 0 0 8px;
+    }
+    .subtitle {
+      color: #64748b;
+      font-size: 14px;
+      margin: 0;
+    }
+    label {
+      font-size: 11px;
+      letter-spacing: 0.15em;
+      color: #475569;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    .auto-detected {
+      color: #38bdf8 !important;
+      text-transform: none !important;
+      letter-spacing: 0 !important;
+      font-size: 12px !important;
+    }
+    .country-select {
+      background: #0f1623;
+      border: 1px solid #1e3a5f;
+      border-radius: 10px;
+      padding: 14px 20px;
+      color: #e2e8f0;
+      width: 100%;
+      font-size: 15px;
+      font-family: inherit;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+    .country-select:focus { 
+      outline: none; 
+      border-color: #38bdf8; 
+    }
+    .country-select option {
+      background: #0d1525;
+      color: #e2e8f0;
+      padding: 12px;
+    }
+    .currency-display {
+      background: #0a101c;
+      border: 1px solid #243650;
+      border-radius: 10px;
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 32px;
+    }
+    .currency-code {
+      background: #38bdf820;
+      color: #38bdf8;
+      padding: 3px 10px;
+      border-radius: 5px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .revenue-input-container {
+      position: relative;
+      margin-bottom: 40px;
+    }
+    .currency-symbol {
+      position: absolute;
+      left: 20px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #38bdf8;
+      font-size: 20px;
+      font-weight: bold;
+    }
+    .revenue-input {
+      width: 100%;
+      padding: 18px 20px 18px 52px;
+      background: #0f1623;
+      border: 1px solid #1e3a5f;
+      border-radius: 10px;
+      color: #f1f5f9;
+      font-size: 24px;
+      font-family: 'DM Mono',monospace;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .revenue-input:focus { border-color: #38bdf8; }
+    .revenue-input::placeholder { color: #2d3f55; }
+    .inr-equivalent {
+      margin-top: 8px;
+      font-size: 12px;
+      color: #475569;
+    }
+    .segment-card {
+      background: #1e293b;
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      border-left: 4px solid #38bdf8;
+      border-radius: 12px;
+      padding: 28px;
+      margin-bottom: 40px;
+      box-shadow: 0 0 40px rgba(56, 189, 248, 0.06);
+      animation: fadeIn 0.3s ease;
+    }
+    .segment-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 8px;
+    }
+    .segment-icon { font-size: 28px; }
+    .segment-badge {
+      font-size: 11px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+    .segment-title {
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+    .segment-description {
+      color: #94a3b8;
+      font-size: 14px;
+      margin: 0 0 20px;
+    }
+    .progress-bar {
+      height: 4px;
+      background: #1e293b;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg,rgba(56, 189, 248, 0.5),#38bdf8);
+      border-radius: 4px;
+      transition: width 0.5s ease;
+    }
+    .thresholds-header {
+      font-size: 11px;
+      letter-spacing: 0.15em;
+      color: #475569;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+    .threshold-grid {
+      display: grid;
+      gap: 8px;
+    }
+    .threshold-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 20px;
+      background: #0a101c;
+      border: 1px solid #1a2535;
+      border-radius: 8px;
+      transition: all 0.2s;
+    }
+    .threshold-item.active {
+      background: #1a0e2e;
+      border-color: rgba(167, 139, 250, 0.4);
+    }
+    .threshold-icon { font-size: 14px; }
+    .threshold-label.active { color: #f1f5f9; font-weight: 600; }
+    .threshold-label { color: #64748b; font-weight: 400; font-size: 14px; }
+    .threshold-range.active { color: #a78bfa; }
+    .threshold-range { color: #475569; font-size: 13px; letter-spacing: 0.05em; }
+    .footer-note {
+      margin-top: 16px;
+      font-size: 11px;
+      color: #2d3f55;
+      text-align: right;
+    }
+    @keyframes pulse {
+      0%,100%{opacity:1}
+      50%{opacity:0.4}
+    }
+    @keyframes fadeIn {
+      from{opacity:0;transform:translateY(6px)}
+      to{opacity:1;transform:translateY(0)}
+    }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #080c14; }
+    ::-webkit-scrollbar-thumb { background: #1e3a5f; border-radius: 3px; }
+  </style>
+</head>
+<body>
+  <div class="grid-bg"></div>
+  <div class="glow"></div>
+  
+  <div class="container">
+    <!-- Header -->
+    <div style="margin-bottom: 48px;">
+      <div class="header-badge">
+        <div class="pulse-dot"></div>
+        <span>Aman Demo Project for Venkatesh</span>
+      </div>
+      <h1>Customer Segmentation</h1>
+      <p class="subtitle">Select your country — currency auto-fills and thresholds convert from INR base</p>
+    </div>
+
+    <!-- Country Selector -->
+    <div class="country-selector" style="margin-bottom: 16px;">
+      <label id="country-label">
+        Step 1 — Select Country
+      </label>
+      <select class="country-select" id="country-select">
+        <!-- Options populated by JavaScript -->
+      </select>
+    </div>
+
+    <!-- Currency Display -->
+    <div>
+      <label>Step 2 — Currency (auto-filled)</label>
+      <div class="currency-display">
+        <span id="currency-info">
+          <span class="currency-code" id="currency-code">INR</span>
+          <span id="currency-name">Indian Rupee (₹)</span>
+        </span>
+        <span id="exchange-rate">₹1 = ₹1.00</span>
+      </div>
+    </div>
+
+    <!-- Revenue Input -->
+    <div class="revenue-input-container">
+      <label>Step 3 — Annual Revenue (<span id="input-currency-code">INR</span>)</label>
+      <div style="position: relative;">
+        <span class="currency-symbol" id="input-symbol">₹</span>
+        <input type="text" class="revenue-input" id="revenue-input" placeholder="0">
+      </div>
+      <div class="inr-equivalent" id="inr-equivalent" style="display: none;"></div>
+    </div>
+
+    <!-- Segment Result -->
+    <div id="segment-card" class="segment-card" style="display: none;"></div>
+
+    <!-- Thresholds Table -->
+    <div>
+      <div class="thresholds-header" id="thresholds-header">
+        Segment Thresholds — 🇮🇳 INR
+      </div>
+      <div class="threshold-grid" id="threshold-grid"></div>
+      <div class="footer-note">
+        Indicative rates vs INR • Base thresholds: ₹50L / ₹1Cr / ₹1.5Cr
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Constants
+    const INR_THRESHOLDS = {
+      named: 5000000,
+      highPotential: 10000000,
+      enterprise: 15000000,
+    };
+
+    const CURRENCIES = [
+      { code: "INR", symbol: "₹", name: "Indian Rupee", rateToINR: 1 },
+      { code: "USD", symbol: "$", name: "US Dollar", rateToINR: 83.5 },
+      { code: "EUR", symbol: "€", name: "Euro", rateToINR: 90.2 },
+      { code: "GBP", symbol: "£", name: "British Pound", rateToINR: 106.1 },
+      { code: "AED", symbol: "د.إ", name: "UAE Dirham", rateToINR: 22.7 },
+      { code: "SGD", symbol: "S$", name: "Singapore Dollar", rateToINR: 62.3 },
+      { code: "JPY", symbol: "¥", name: "Japanese Yen", rateToINR: 0.56 },
+      { code: "AUD", symbol: "A$", name: "Australian Dollar", rateToINR: 54.8 },
+      { code: "CAD", symbol: "C$", name: "Canadian Dollar", rateToINR: 61.5 },
+      { code: "CNY", symbol: "¥", name: "Chinese Yuan", rateToINR: 11.5 },
+      { code: "CHF", symbol: "Fr", name: "Swiss Franc", rateToINR: 94.2 },
+      { code: "SAR", symbol: "﷼", name: "Saudi Riyal", rateToINR: 22.3 },
+      { code: "MYR", symbol: "RM", name: "Malaysian Ringgit", rateToINR: 18.9 },
+      { code: "BRL", symbol: "R$", name: "Brazilian Real", rateToINR: 16.8 },
+      { code: "ZAR", symbol: "R", name: "South African Rand", rateToINR: 4.5 },
+      { code: "NZD", symbol: "NZ$", name: "New Zealand Dollar", rateToINR: 50.3 },
+      { code: "SEK", symbol: "kr", name: "Swedish Krona", rateToINR: 7.9 },
+      { code: "NOK", symbol: "kr", name: "Norwegian Krone", rateToINR: 7.6 },
+      { code: "KRW", symbol: "₩", name: "South Korean Won", rateToINR: 0.062 },
+      { code: "THB", symbol: "฿", name: "Thai Baht", rateToINR: 2.4 },
+    ];
+
+    const COUNTRIES = [
+      { code: "IN", name: "India", flag: "🇮🇳", currency: "INR" },
+      { code: "US", name: "United States", flag: "🇺🇸", currency: "USD" },
+      { code: "GB", name: "United Kingdom", flag: "🇬🇧", currency: "GBP" },
+      { code: "DE", name: "Germany", flag: "🇩🇪", currency: "EUR" },
+      { code: "FR", name: "France", flag: "🇫🇷", currency: "EUR" },
+      { code: "IT", name: "Italy", flag: "🇮🇹", currency: "EUR" },
+      { code: "ES", name: "Spain", flag: "🇪🇸", currency: "EUR" },
+      { code: "NL", name: "Netherlands", flag: "🇳🇱", currency: "EUR" },
+      { code: "AE", name: "UAE", flag: "🇦🇪", currency: "AED" },
+      { code: "SA", name: "Saudi Arabia", flag: "🇸🇦", currency: "SAR" },
+      { code: "SG", name: "Singapore", flag: "🇸🇬", currency: "SGD" },
+      { code: "JP", name: "Japan", flag: "🇯🇵", currency: "JPY" },
+      { code: "AU", name: "Australia", flag: "🇦🇺", currency: "AUD" },
+      { code: "CA", name: "Canada", flag: "🇨🇦", currency: "CAD" },
+      { code: "CN", name: "China", flag: "🇨🇳", currency: "CNY" },
+      { code: "CH", name: "Switzerland", flag: "🇨🇭", currency: "CHF" },
+      { code: "MY", name: "Malaysia", flag: "🇲🇾", currency: "MYR" },
+      { code: "BR", name: "Brazil", flag: "🇧🇷", currency: "BRL" },
+      { code: "ZA", name: "South Africa", flag: "🇿🇦", currency: "ZAR" },
+      { code: "NZ", name: "New Zealand", flag: "🇳🇿", currency: "NZD" },
+      { code: "SE", name: "Sweden", flag: "🇸🇪", currency: "SEK" },
+      { code: "NO", name: "Norway", flag: "🇳🇴", currency: "NOK" },
+      { code: "KR", name: "South Korea", flag: "🇰🇷", currency: "KRW" },
+      { code: "TH", name: "Thailand", flag: "🇹🇭", currency: "THB" },
+    ];
+
+    const TIERS = [
+      { key: "none", label: "No Segment", color: "#94a3b8", bg: "#1e293b", icon: "—", description: "Revenue is zero or negative" },
+      { key: "named", label: "Named Customer", color: "#38bdf8", bg: "#0c1a2e", icon: "◆", description: "Early engagement tier" },
+      { key: "highPotential", label: "High Potential Customer", color: "#a78bfa", bg: "#1a0e2e", icon: "◈", description: "Strong growth indicators" },
+      { key: "enterprise", label: "Enterprise Customer", color: "#fb923c", bg: "#2e1500", icon: "⬟", description: "Large-scale operations" },
+      { key: "key", label: "Key Customer", color: "#f59e0b", bg: "#2e1f00", icon: "★", description: "Top-tier strategic partner" },
+    ];
+
+    // State
+    let selectedCountry = COUNTRIES[0];
+    let selectedCurrency = CURRENCIES[0];
+    let rawInput = "";
+    let segment = null;
+    let autoDetected = false;
+
+    // Functions
+    function getSegment(inr) {
+      if (inr <= 0) return "none";
+      if (inr <= INR_THRESHOLDS.named) return "named";
+      if (inr <= INR_THRESHOLDS.highPotential) return "highPotential";
+      if (inr <= INR_THRESHOLDS.enterprise) return "enterprise";
+      return "key";
+    }
+
+    function fmt(amount, currency) {
+      if (amount >= 1000000000) return `${currency.symbol}${(amount / 1000000000).toFixed(2)}B`;
+      if (amount >= 1000000) return `${currency.symbol}${(amount / 1000000).toFixed(2)}M`;
+      if (amount >= 1000) return `${currency.symbol}${(amount / 1000).toFixed(1)}K`;
+      return `${currency.symbol}${Math.round(amount)}`;
+    }
+
+    function populateCountryDropdown() {
+      const select = document.getElementById('country-select');
+      select.innerHTML = COUNTRIES.map(country => 
+        `<option value="${country.code}" ${selectedCountry.code === country.code ? 'selected' : ''}>
+          ${country.flag} ${country.name} (${country.currency})
+        </option>`
+      ).join('');
+    }
+
+    function updateDisplay() {
+      // Update currency display
+      document.getElementById('currency-code').textContent = selectedCurrency.code;
+      document.getElementById('currency-name').textContent = `${selectedCurrency.name} (${selectedCurrency.symbol})`;
+      document.getElementById('exchange-rate').textContent = `${selectedCurrency.symbol}1 = ₹${selectedCurrency.rateToINR.toFixed(2)}`;
+      document.getElementById('input-currency-code').textContent = selectedCurrency.code;
+      document.getElementById('input-symbol').textContent = selectedCurrency.symbol;
+      
+      // Update thresholds header
+      document.getElementById('thresholds-header').textContent = `Segment Thresholds — ${selectedCountry.flag} ${selectedCurrency.code}`;
+      
+      // Update input label
+      const label = document.getElementById('country-label');
+      if (autoDetected) {
+        label.innerHTML = 'Step 1 — Select Country <span class="auto-detected">(Auto-detected)</span>';
+      } else {
+        label.textContent = 'Step 1 — Select Country';
+      }
+      
+      populateCountryDropdown();
+      updateThresholds();
+      updateSegment();
+    }
+
+    function handleInput() {
+      const num = parseFloat(rawInput.replace(/,/g, ""));
+      if (!isNaN(num) && rawInput.trim() !== "") {
+        segment = getSegment(num * selectedCurrency.rateToINR);
+        const revenueInINR = num * selectedCurrency.rateToINR;
+        document.getElementById('inr-equivalent').textContent = `≈ ₹${revenueInINR.toLocaleString("en-IN")} INR`;
+        document.getElementById('inr-equivalent').style.display = 'block';
+      } else {
+        segment = null;
+        document.getElementById('inr-equivalent').style.display = 'none';
+      }
+      updateSegment();
+      updateThresholds();
+    }
+
+    function updateSegment() {
+      const segmentCard = document.getElementById('segment-card');
+      if (segment && segment !== 'none') {
+        const currentTier = TIERS.find(t => t.key === segment);
+        segmentCard.innerHTML = `
+          <div class="segment-header">
+            <span class="segment-icon" style="color: ${currentTier.color};">${currentTier.icon}</span>
+            <div>
+              <div class="segment-badge" style="color: ${currentTier.color};">Segment Classification</div>
+              <div class="segment-title">${currentTier.label}</div>
+            </div>
+          </div>
+          <p class="segment-description">${currentTier.description}</p>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: ${Math.min((parseFloat(rawInput.replace(/,/g, "")) * selectedCurrency.rateToINR / (INR_THRESHOLDS.enterprise * 1.5)) * 100, 100)}%; background: linear-gradient(90deg,${currentTier.color}80,${currentTier.color});"></div>
+          </div>
+        `;
+        segmentCard.style.background = currentTier.bg;
+        segmentCard.style.border = `1px solid ${currentTier.color}40`;
+        segmentCard.style.borderLeft = `4px solid ${currentTier.color}`;
+        segmentCard.style.boxShadow = `0 0 40px ${currentTier.color}10`;
+        segmentCard.style.display = 'block';
+      } else {
+        segmentCard.style.display = 'none';
+      }
+    }
+
+    function updateThresholds() {
+      const revenueNum = parseFloat(rawInput.replace(/,/g, "")) || 0;
+      const thresholds = {
+        named: INR_THRESHOLDS.named / selectedCurrency.rateToINR,
+        highPotential: INR_THRESHOLDS.highPotential / selectedCurrency.rateToINR,
+        enterprise: INR_THRESHOLDS.enterprise / selectedCurrency.rateToINR,
+      };
+
+      const thresholdData = [
+        { tier: TIERS[1], range: `${selectedCurrency.symbol}0 – ${fmt(thresholds.named, selectedCurrency)}` },
+        { tier: TIERS[2], range: `${fmt(thresholds.named, selectedCurrency)} – ${fmt(thresholds.highPotential, selectedCurrency)}` },
+        { tier: TIERS[3], range: `${fmt(thresholds.highPotential, selectedCurrency)} – ${fmt(thresholds.enterprise, selectedCurrency)}` },
+        { tier: TIERS[4], range: `> ${fmt(thresholds.enterprise, selectedCurrency)}` },
+      ];
+
+      const grid = document.getElementById('threshold-grid');
+      grid.innerHTML = thresholdData.map(({ tier, range }, index) => {
+        const isActive = segment === tier.key;
+        return `
+          <div class="threshold-item ${isActive ? 'active' : ''}" style="${isActive ? `background: ${tier.bg}; border-color: ${tier.color}60;` : ''}">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <span class="threshold-icon" style="color: ${tier.color};">${tier.icon}</span>
+              <span class="threshold-label ${isActive ? 'active' : ''}">${tier.label}</span>
+            </div>
+            <span class="threshold-range ${isActive ? 'active' : ''}" style="${isActive ? `color: ${tier.color};` : ''}">${range}</span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function handleCountrySelect(code) {
+      const country = COUNTRIES.find(c => c.code === code);
+      if (country) {
+        selectedCountry = country;
+        const cur = CURRENCIES.find(c => c.code === country.currency);
+        if (cur) {
+          selectedCurrency = cur;
+          const num = parseFloat(rawInput.replace(/,/g, ""));
+          if (!isNaN(num) && rawInput.trim() !== "") {
+            segment = getSegment(num * cur.rateToINR);
+          }
+        }
+        autoDetected = false;
+        updateDisplay();
+      }
+    }
+
+    // Event Listeners
+    document.getElementById('country-select').addEventListener('change', (e) => {
+      handleCountrySelect(e.target.value);
+    });
+
+    document.getElementById('revenue-input').addEventListener('input', (e) => {
+      rawInput = e.target.value;
+      handleInput();
+    });
+
+    // Auto-detect country
+    function autoDetectCountry() {
+      try {
+        const locale = navigator.language || "en-IN";
+        const region = locale.split("-")[1];
+        const country = COUNTRIES.find(c => c.code === region);
+        if (country) {
+          selectedCountry = country;
+          const cur = CURRENCIES.find(c => c.code === country.currency);
+          if (cur) {
+            selectedCurrency = cur;
+            autoDetected = true;
+          }
+        }
+      } catch (e) {}
+      updateDisplay();
+    }
+
+    // Initialize
+    autoDetectCountry();
+  </script>
+</body>
+</html>
