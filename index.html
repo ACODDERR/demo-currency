@@ -410,7 +410,7 @@
       const select = document.getElementById('country-select');
       select.innerHTML = COUNTRIES.map(country => 
         `<option value="${country.code}" ${selectedCountry.code === country.code ? 'selected' : ''}>
-          ${country.flag} ${country.name} (${country.currency})
+          ${country.name}
         </option>`
       ).join('');
     }
